@@ -1,0 +1,102 @@
+"""Daily job (weekday evenings): SPY prices and dividends, the stock universe snapshot, 10-year Treasury.
+
+Each step runs independently; a failed step is recorded in manifest.json and the job exits
+non-zero after publishing whatever succeeded.
+"""
+from __future__ import annotations
+
+import datetime as dt
+import sys
+
+from . import fred, nasdaq
+from .common import (Manifest, ensure_release, log, nasdaq_session, norm_symbol, plain_session,
+                     publish, read_parquet, upsert, utcnow, write_parquet)
+
+UNIVERSE_FLOOR = 250e6  # keep everything above $250M so names crossing the $1B floor have history
+
+
+def spy_prices(m: Manifest, ns) -> dt.date | None:
+    old = read_parquet("spy_daily.parquet")
+    today = utcnow().date()
+    start = dt.date(2015, 1, 1) if old is None or old.empty else max(old["date"]) - dt.timedelta(days=45)
+    new = nasdaq.historical(ns, "spy", "etf", start, today, label="SPY")
+    if new.empty or not (new["close"] > 0).all():
+        raise ValueError("SPY history empty or has non-positive closes")
+    df = upsert(old, new, ["date"])
+    moves = df["close"].pct_change().abs().dropna()
+    if (moves > 0.15).any():
+        raise ValueError(f"SPY day-over-day move above 15% on {df.loc[moves[moves > 0.15].index, 'date'].tolist()}")
+    publish([write_parquet(df, "spy_daily.parquet")])
+    last = max(df["date"])
+    m.record("spy_daily.parquet", "ok", len(df), last_date=str(last), last_close=float(df["close"].iloc[-1]))
+    return last
+
+
+def universe_snapshot(m: Manifest, ns, trading_date: dt.date | None) -> None:
+    snap = nasdaq.screener_snapshot(ns)
+    n_all = len(snap)
+    if n_all < 3000:
+        raise ValueError(f"screener returned only {n_all} rows")
+    for sym in ("AAPL", "MSFT", "KO"):
+        row = snap[snap["symbol"] == sym]
+        if row.empty or not (row["last_sale"] > 0).all():
+            raise ValueError(f"screener sanity check failed for {sym}")
+    date_source = "SPY latest session"
+    if trading_date is None:
+        trading_date = (utcnow() - dt.timedelta(hours=8)).date()
+        date_source = "run date (SPY step failed)"
+    snap = snap[snap["market_cap"] >= UNIVERSE_FLOOR].copy()
+    snap.insert(0, "date", trading_date)
+    snap["key"] = snap["symbol"].map(norm_symbol)
+    snap["fetched_utc"] = utcnow().isoformat()
+    df = upsert(read_parquet("prices_daily.parquet"), snap, ["date", "symbol"])
+    publish([write_parquet(df, "prices_daily.parquet")])
+    m.record("prices_daily.parquet", "ok", len(df), last_date=str(trading_date), date_source=date_source,
+             symbols_last_date=len(snap), screener_rows=n_all,
+             note="last_sale is Nasdaq's last trade at fetch time and can include after-hours; "
+                  "use closes_official for decision prices")
+
+
+def spy_dividends(m: Manifest, ns) -> None:
+    new = nasdaq.dividends(ns, "spy", "etf", "SPY")
+    if new.empty:
+        raise ValueError("no SPY dividends returned")
+    df = upsert(read_parquet("spy_dividends.parquet"), new, ["ex_date"])
+    publish([write_parquet(df, "spy_dividends.parquet")])
+    m.record("spy_dividends.parquet", "ok", len(df), last_ex_date=str(max(df["ex_date"])))
+
+
+def treasury(m: Manifest) -> None:
+    df = fred.series(plain_session(), "DGS10")
+    if df.empty:
+        raise ValueError("DGS10 empty")
+    publish([write_parquet(df, "treasury_10y.parquet")])
+    m.record("treasury_10y.parquet", "ok", len(df), last_date=str(max(df["date"])),
+             last_value_pct=float(df["value_pct"].iloc[-1]))
+
+
+def main() -> int:
+    ensure_release()
+    m = Manifest()
+    ns = nasdaq_session()
+    trading_date = None
+    steps = [
+        ("spy_daily.parquet", lambda: spy_prices(m, ns)),
+        ("prices_daily.parquet", lambda: universe_snapshot(m, ns, trading_date)),
+        ("spy_dividends.parquet", lambda: spy_dividends(m, ns)),
+        ("treasury_10y.parquet", lambda: treasury(m)),
+    ]
+    for asset, fn in steps:
+        try:
+            result = fn()
+            if asset == "spy_daily.parquet":
+                trading_date = result
+        except Exception as exc:  # noqa: BLE001 - record and carry on
+            m.record(asset, "failed", error=f"{type(exc).__name__}: {exc}")
+    m.save_and_publish("daily")
+    log(f"daily done; failures: {m.failures or 'none'}")
+    return 1 if m.failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
