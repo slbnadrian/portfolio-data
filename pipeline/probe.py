@@ -14,7 +14,7 @@ import requests
 
 from .common import WORK, ensure_release, nasdaq_session, publish, utcnow
 
-HEAD_BYTES = min(int(os.environ.get("PROBE_MAX_BYTES") or 20_000), 2_000_000)
+HEAD_BYTES = min(int(os.environ.get("PROBE_MAX_BYTES") or 20_000), 25_000_000)  # a full 10-K fits
 
 
 def headers_for(url: str) -> dict:
@@ -32,13 +32,13 @@ def probe(url: str) -> dict:
             rec["status"] = r.status_code
             rec["headers"] = {k: v for k, v in r.headers.items()
                               if k.lower() in ("content-type", "content-length", "last-modified", "date")}
-            body = b""
-            for chunk in r.iter_content(8192):
-                body += chunk
-                if len(body) >= HEAD_BYTES:
+            body = bytearray()
+            for chunk in r.iter_content(65536):
+                body.extend(chunk)
+                if len(body) > HEAD_BYTES:
                     rec["truncated"] = True
                     break
-        rec["body_head"] = body[:HEAD_BYTES].decode("utf-8", "replace")
+        rec["body_head"] = bytes(body[:HEAD_BYTES]).decode("utf-8", "replace")
     except Exception as exc:  # noqa: BLE001 - the point is to record the failure
         rec["error"] = f"{type(exc).__name__}: {exc}"
     return rec

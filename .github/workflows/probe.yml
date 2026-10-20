@@ -8,7 +8,7 @@ on:
         description: Space-separated URLs to fetch
         required: true
       max_bytes:
-        description: Bytes kept per response (default 20000, max 2000000)
+        description: Bytes kept per response (default 20000, max 25000000)
         required: false
         default: "20000"
 
