@@ -232,8 +232,8 @@ def _total_debt(w: pd.DataFrame) -> pd.Series:
         return w[name] if name in w else pd.Series(float("nan"), index=w.index)
 
     # Commercial paper is usually reported inside short-term borrowings (often the same figure, tagged
-    # twice), so take the larger of the two rather than the sum: on 2026-10-20, summing double counted
-    # it at 10 companies.
+    # twice), so take the larger of the two rather than the sum: on 2026-10-20, 10 companies tagged
+    # both, 4 with identical figures.
     stb_cp = pd.concat([c("short_term_borrowings"), c("commercial_paper")], axis=1).max(axis=1).fillna(0)
     current = c("debt_current").where(c("debt_current").notna(), c("lt_debt_current").fillna(0) + stb_cp)
     any_debt_tag = pd.concat([c(n).notna() for n in ("lt_debt_noncurrent", "lt_debt_total", "lt_debt_current",
