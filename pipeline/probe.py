@@ -8,12 +8,13 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 
 import requests
 
 from .common import WORK, ensure_release, nasdaq_session, publish, utcnow
 
-HEAD_BYTES = 20_000
+HEAD_BYTES = min(int(os.environ.get("PROBE_MAX_BYTES") or 20_000), 2_000_000)
 
 
 def headers_for(url: str) -> dict:
@@ -48,7 +49,10 @@ def main() -> int:
     if not urls:
         print("no PROBE_URLS given")
         return 1
-    results = [probe(u) for u in urls]
+    results = []
+    for u in urls:
+        results.append(probe(u))
+        time.sleep(0.2)  # stay well under SEC's 10 requests/second
     for r in results:
         print(r["url"], r.get("status"), r.get("error", ""), len(r.get("body_head", "")))
     path = WORK / "probe.json"
