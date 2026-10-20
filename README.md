@@ -8,11 +8,12 @@ This repository holds **public market data only** — never holdings, trades or 
 
 ## Setup (once)
 
-1. **Settings → Secrets and variables → Actions → Variables → New repository variable**
+1. **Settings → Secrets and variables → Actions → Secrets → New repository secret**
    - Name: `SEC_USER_AGENT`
    - Value: your name and email, e.g. `Jane Doe jane@example.com`
    The SEC requires automated users to identify themselves this way. It is used only in
-   requests to sec.gov.
+   requests to sec.gov. Store it as a **secret**, not a variable: GitHub prints variables in
+   job logs, and in a public repository anyone can read those logs.
 2. **Actions tab → enable workflows** if GitHub asks.
 3. Run **daily** once, then **weekly** (Actions → choose workflow → *Run workflow*). The weekly
    job needs the daily job's universe snapshot.

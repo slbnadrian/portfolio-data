@@ -67,7 +67,7 @@ def sec_session() -> requests.Session:
     ua = os.environ.get("SEC_USER_AGENT", "").strip()
     if "@" not in ua:
         raise RuntimeError(
-            "SEC_USER_AGENT is not set. Add a repository variable named SEC_USER_AGENT "
+            "SEC_USER_AGENT is not set. Add a repository secret named SEC_USER_AGENT "
             "with your name and email, e.g. 'Jane Doe jane@example.com'."
         )
     return _session({"User-Agent": ua, "Accept-Encoding": "gzip, deflate"})

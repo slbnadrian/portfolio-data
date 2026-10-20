@@ -32,4 +32,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PROBE_URLS: ${{ inputs.urls }}
           PROBE_MAX_BYTES: ${{ inputs.max_bytes }}
-          SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+          # A secret, not a variable: GitHub prints variables in the job log, which is public here.
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
