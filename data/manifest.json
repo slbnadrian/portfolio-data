@@ -1,0 +1,106 @@
+{
+  "assets": {
+    "annual.parquet": {
+      "built_utc": "2026-10-20T17:21:49+00:00",
+      "companies": 2938,
+      "rows": 27815,
+      "status": "ok"
+    },
+    "closes_official.parquet": {
+      "built_utc": "2026-10-20T18:45:22+00:00",
+      "coverage": 1.0,
+      "last_date": "2026-10-19",
+      "rows": 40172,
+      "status": "ok",
+      "symbols_covered": 2680,
+      "symbols_requested": 2680
+    },
+    "companies.parquet": {
+      "built_utc": "2026-10-20T17:19:03+00:00",
+      "coverage": 1.0,
+      "rows": 3535,
+      "status": "ok"
+    },
+    "earnings_calendar.parquet": {
+      "built_utc": "2026-10-20T18:20:10+00:00",
+      "days_failed": 0,
+      "rows": 4294,
+      "status": "ok",
+      "through": "2026-12-01"
+    },
+    "facts.parquet": {
+      "built_utc": "2026-10-20T17:21:49+00:00",
+      "companies": 3338,
+      "latest_filed": "2026-10-19",
+      "rows": 1823966,
+      "status": "ok"
+    },
+    "filings.parquet": {
+      "built_utc": "2026-10-20T17:19:03+00:00",
+      "latest_filing": "2026-10-19",
+      "rows": 600387,
+      "status": "ok"
+    },
+    "insider.parquet": {
+      "backlog": 0,
+      "built_utc": "2026-10-20T18:19:10+00:00",
+      "failures": 0,
+      "fetched": 27484,
+      "rows": 57563,
+      "status": "ok"
+    },
+    "prices_daily.parquet": {
+      "built_utc": "2026-10-20T17:17:42+00:00",
+      "date_source": "SPY latest session",
+      "last_date": "2026-10-19",
+      "note": "last_sale is Nasdaq's last trade at fetch time and can include after-hours; use closes_official for decision prices",
+      "rows": 3753,
+      "screener_rows": 6986,
+      "status": "ok",
+      "symbols_last_date": 3753
+    },
+    "sec_tickers.parquet": {
+      "built_utc": "2026-10-20T17:18:41+00:00",
+      "rows": 10443,
+      "status": "ok"
+    },
+    "spy_daily.parquet": {
+      "built_utc": "2026-10-20T17:17:37+00:00",
+      "last_close": 766.48,
+      "last_date": "2026-10-19",
+      "rows": 2513,
+      "status": "ok"
+    },
+    "spy_dividends.parquet": {
+      "built_utc": "2026-10-20T17:17:44+00:00",
+      "last_amount": 1.889,
+      "last_ex_date": "2026-09-18",
+      "rows": 136,
+      "source": "Yahoo Finance chart events",
+      "status": "ok"
+    },
+    "treasury_10y.parquet": {
+      "built_utc": "2026-10-20T17:17:52+00:00",
+      "last_date": "2026-10-19",
+      "last_value_pct": 5.15,
+      "rows": 2699,
+      "source": "home.treasury.gov daily par yield curve",
+      "status": "ok"
+    },
+    "ttm.parquet": {
+      "built_utc": "2026-10-20T17:21:49+00:00",
+      "rows": 3338,
+      "status": "ok",
+      "with_net_income": 2913
+    },
+    "universe_match": {
+      "built_utc": "2026-10-20T17:18:42+00:00",
+      "rows": 3748,
+      "share_matched": 0.999,
+      "snapshot_date": "2026-10-19",
+      "status": "ok"
+    }
+  },
+  "last_daily_run_utc": "2026-10-20T17:17:52+00:00",
+  "last_weekly_run_utc": "2026-10-20T18:45:22+00:00"
+}
