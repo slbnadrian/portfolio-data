@@ -58,10 +58,14 @@ Download any file from `https://github.com/<owner>/<repo>/releases/download/data
   period; `tag` records which one was used. `value` is the latest filed figure (restatements win);
   `first_value` is the figure as first reported.
 - **`total_debt` is blank when a company tags no debt at all.** Blank means "check the balance
-  sheet", not zero.
+  sheet", not zero. It is non-current long-term debt + current debt (or current long-term debt +
+  the larger of short-term borrowings and commercial paper, since paper is usually inside
+  borrowings). Leases are excluded. Short-term notes tagged with an unusual element are missed —
+  Coca-Cola's come out 0.1-0.8% light — so confirm debt against the filing before relying on it.
 - **Trailing twelve months** = last fiscal year + current year-to-date − prior-year
   year-to-date. A company with no newer quarter falls back to the fiscal year.
-- **Gaps:** foreign filers reporting under IFRS (20-F) have no US-GAAP facts here; there are no
+- **Gaps:** foreign filers reporting under IFRS (20-F, 40-F) and US filers reporting in another
+  currency (only USD facts are parsed) have no financials here; there are no
   analyst consensus estimates beyond Nasdaq's next-quarter EPS forecast.
 
 ## Tests
@@ -81,7 +85,10 @@ User-Agent, under 10 requests per second, bulk files instead of per-company call
 Nasdaq, Yahoo Finance, Treasury and FRED data are used for personal, non-commercial purposes at a
 few requests per day.
 
-## Diagnosing a broken source
+## Diagnosing a broken source, and reading filings
 
 The `probe` workflow (Actions → probe → Run workflow) fetches any space-separated URLs from GitHub's
-network and publishes the raw responses as `probe.json` on the `data` release.
+network and publishes the raw responses as `probe.json` on the `data` release, keeping the first
+`max_bytes` of each (default 20,000; up to 25,000,000, enough for a full 10-K or proxy). It is also
+how filings are read from a session that cannot reach sec.gov: a filing folder's `FilingSummary.xml`
+lists its rendered statement pages (`R2.htm`, `R3.htm`, …), and the main document holds the text.

@@ -233,6 +233,10 @@ def test_companyfacts_pipeline():
 def test_total_debt_without_noncurrent_tag():
     w = pd.DataFrame({"lt_debt_total": [50.0], "short_term_borrowings": [5.0]})
     assert sec._total_debt(w).iloc[0] == 55.0
+    # commercial paper inside short-term borrowings is counted once
+    cp = pd.DataFrame({"lt_debt_noncurrent": [40.0], "lt_debt_current": [3.0],
+                       "short_term_borrowings": [7.0], "commercial_paper": [7.0]})
+    assert sec._total_debt(cp).iloc[0] == 50.0
     none = pd.DataFrame({"revenue": [1.0]})
     assert math.isnan(sec._total_debt(none).iloc[0])         # nothing tagged is unknown, not zero
 
