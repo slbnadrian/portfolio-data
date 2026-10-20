@@ -77,6 +77,14 @@ def plain_session() -> requests.Session:
     return _session({"User-Agent": "portfolio-data/1.0"})
 
 
+def quick_session() -> requests.Session:
+    """One retry, for fallbacks: a source that is down should fail fast, not hold the job."""
+    s = requests.Session()
+    s.mount("https://", HTTPAdapter(max_retries=Retry(total=1, backoff_factor=1.0)))
+    s.headers.update({"User-Agent": "portfolio-data/1.0"})
+    return s
+
+
 class RateLimiter:
     """At most `per_second` calls per second across threads."""
 

@@ -37,8 +37,8 @@ Download any file from `https://github.com/<owner>/<repo>/releases/download/data
 | `prices_daily.parquet` | symbol × trading day, every US stock ≥ $250M market cap | `date`, `symbol`, `key`, `api_symbol`, `last_sale`, `change_1d`, `volume`, `market_cap`, `sector`, `industry`, `country` | Nasdaq screener |
 | `closes_official.parquet` | symbol × day, ≥ $1B market cap, refreshed weekly (last 3 weeks each run, 5 years kept) | `symbol`, `key`, `date`, `open`, `high`, `low`, `close`, `volume` | Nasdaq historical |
 | `spy_daily.parquet` | SPY × day since 2015 | `date`, `open`, `high`, `low`, `close`, `volume` | Nasdaq historical |
-| `spy_dividends.parquet` | SPY distributions | `ex_date`, `amount`, `record_date`, `pay_date` | Nasdaq |
-| `treasury_10y.parquet` | day | `date`, `value_pct` | FRED `DGS10` |
+| `spy_dividends.parquet` | SPY distributions | `symbol`, `ex_date`, `amount` | Yahoo Finance chart events (Nasdaq's dividend history covers Nasdaq-listed securities only) |
+| `treasury_10y.parquet` | day | `date`, `value_pct`, `series` | US Treasury daily par yield curve (home.treasury.gov); FRED `DGS10` as fallback |
 | `sec_tickers.parquet` | ticker | `cik`, `name`, `ticker`, `exchange`, `key` | SEC |
 | `companies.parquet` | company | `cik`, `name`, `sic`, `sic_description`, `entity_type`, `filer_category`, `fiscal_year_end`, `tickers` | SEC submissions |
 | `filings.parquet` | filing, last 3 years | `cik`, `form`, `filing_date`, `report_date`, `accession`, `items` (8-K item numbers), `url` | SEC submissions |
@@ -78,4 +78,10 @@ both jobs with the network stubbed. Both workflows run them before building.
 
 SEC EDGAR data is public; this pipeline follows the SEC's fair-access policy (a declared
 User-Agent, under 10 requests per second, bulk files instead of per-company calls where possible).
-Nasdaq and FRED data are used for personal, non-commercial purposes at a few requests per day.
+Nasdaq, Yahoo Finance, Treasury and FRED data are used for personal, non-commercial purposes at a
+few requests per day.
+
+## Diagnosing a broken source
+
+The `probe` workflow (Actions → probe → Run workflow) fetches any space-separated URLs from GitHub's
+network and publishes the raw responses as `probe.json` on the `data` release.

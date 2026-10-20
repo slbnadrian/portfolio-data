@@ -65,16 +65,33 @@ def test_historical():
     assert nasdaq.parse_historical({"data": None}, "X").empty
 
 
-DIVIDENDS = {"data": {"dividendHeaderValues": [], "dividends": {"headers": {}, "rows": [
-    {"exOrEffDate": "09/19/2026", "type": "Cash", "amount": "$1.831", "declarationDate": "N/A",
-     "recordDate": "09/19/2026", "paymentDate": "10/31/2026"},
-    {"exOrEffDate": "06/20/2026", "type": "Cash", "amount": "$1.761", "declarationDate": "N/A",
-     "recordDate": "06/20/2026", "paymentDate": "07/31/2026"}]}}}
+# shape observed from GitHub's runners on 2026-10-20 (probe workflow)
+YAHOO_DIVS = {"chart": {"result": [{"meta": {"symbol": "SPY"}, "timestamp": [1756699200, 1764565200],
+    "events": {"dividends": {
+        "1764565200": {"amount": 1.993, "date": 1766154600},
+        "1756699200": {"amount": 1.831, "date": 1758288600}}}}], "error": None}}
 
 
-def test_dividends():
-    df = nasdaq.parse_dividends(DIVIDENDS, "SPY")
-    assert df.iloc[0].ex_date == dt.date(2026, 9, 19) and df.iloc[0].amount == 1.831
+def test_yahoo_dividends():
+    from pipeline import yahoo
+    df = yahoo.parse_dividends(YAHOO_DIVS, "SPY")
+    assert df.ex_date.tolist() == [dt.date(2025, 9, 19), dt.date(2025, 12, 19)]   # New York dates, sorted
+    assert df.amount.tolist() == [1.831, 1.993]
+    assert yahoo.parse_dividends({"chart": {"result": None}}, "SPY").empty
+
+
+TREASURY_CSV = ('Date,"1 Mo","1.5 Month","2 Mo","3 Mo","4 Mo","6 Mo","1 Yr","2 Yr","3 Yr","5 Yr","7 Yr",'
+                '"10 Yr","20 Yr","30 Yr"\n'
+                "10/19/2026,4.11,4.14,4.17,4.27,4.34,4.37,4.50,4.77,4.85,4.94,5.04,5.15,5.53,5.48\n"
+                "10/16/2026,4.12,4.14,4.17,4.26,4.32,4.34,4.46,4.74,4.82,4.89,4.98,5.09,5.47,5.43\n")
+
+
+def test_treasury():
+    from pipeline import treasury
+    df = treasury.parse_year(TREASURY_CSV)
+    assert df.iloc[0].date == dt.date(2026, 10, 19) and df.iloc[0].value_pct == 5.15
+    assert treasury.years_to_fetch(True, dt.date(2026, 10, 20)) == [2025, 2026]
+    assert len(treasury.years_to_fetch(False, dt.date(2026, 10, 20))) == 11
 
 
 EARNINGS = {"data": {"asOf": "Tue, Oct 20, 2026", "headers": {}, "rows": [

@@ -6,7 +6,7 @@ import zipfile
 
 import pandas as pd
 
-from tests.test_parsers import DIVIDENDS, EARNINGS, FACTS, FORM4, HISTORICAL, SCREENER, SUBMISSION
+from tests.test_parsers import EARNINGS, FACTS, FORM4, HISTORICAL, SCREENER, SUBMISSION, TREASURY_CSV
 
 
 class FakeResponse:
@@ -49,15 +49,17 @@ def test_daily_and_weekly(tmp_path, monkeypatch):
     for mod in (common, bd, bw):
         importlib.reload(mod)
     import pipeline.nasdaq as nq
-    import pipeline.fred as fr
+    import pipeline.treasury as ust
+    import pipeline.yahoo as yh
 
     monkeypatch.setattr(nq, "screener_snapshot", lambda s: nq.parse_screener(big_screener()))
     monkeypatch.setattr(nq, "historical",
                         lambda s, sym, ac, a, b, label=None: nq.parse_historical(HISTORICAL, label or sym.upper()))
-    monkeypatch.setattr(nq, "dividends", lambda s, sym, ac, label: nq.parse_dividends(DIVIDENDS, label))
+    many = {"chart": {"result": [{"events": {"dividends": {
+        str(i): {"amount": 1.5 + i / 100, "date": 1600000000 + i * 7_900_000} for i in range(10)}}}]}}
+    monkeypatch.setattr(yh, "dividends", lambda s, sym="SPY": yh.parse_dividends(many, sym))
     monkeypatch.setattr(nq, "earnings_on", lambda s, day: nq.parse_earnings(EARNINGS, day))
-    monkeypatch.setattr(fr, "series", lambda s, sid="DGS10":
-                        fr.parse_series("observation_date,DGS10\n2026-10-16,4.02\n2026-10-17,4.05\n", sid))
+    monkeypatch.setattr(ust, "ten_year", lambda s, years: ust.parse_year(TREASURY_CSV))
 
     assert bd.main() == 0
     prices = pd.read_parquet(tmp_path / "prices_daily.parquet")

@@ -8,9 +8,9 @@ from __future__ import annotations
 import datetime as dt
 import sys
 
-from . import fred, nasdaq
+from . import fred, nasdaq, treasury as ust, yahoo
 from .common import (Manifest, ensure_release, log, nasdaq_session, norm_symbol, plain_session,
-                     publish, read_parquet, upsert, utcnow, write_parquet)
+                     publish, quick_session, read_parquet, upsert, utcnow, write_parquet)
 
 UNIVERSE_FLOOR = 250e6  # keep everything above $250M so names crossing the $1B floor have history
 
@@ -57,22 +57,31 @@ def universe_snapshot(m: Manifest, ns, trading_date: dt.date | None) -> None:
                   "use closes_official for decision prices")
 
 
-def spy_dividends(m: Manifest, ns) -> None:
-    new = nasdaq.dividends(ns, "spy", "etf", "SPY")
-    if new.empty:
-        raise ValueError("no SPY dividends returned")
+def spy_dividends(m: Manifest) -> None:
+    new = yahoo.dividends(nasdaq_session(), "SPY")
+    if len(new) < 8 or not (new["amount"] > 0).all():
+        raise ValueError(f"SPY dividends look wrong: {len(new)} rows")
     df = upsert(read_parquet("spy_dividends.parquet"), new, ["ex_date"])
     publish([write_parquet(df, "spy_dividends.parquet")])
-    m.record("spy_dividends.parquet", "ok", len(df), last_ex_date=str(max(df["ex_date"])))
+    m.record("spy_dividends.parquet", "ok", len(df), last_ex_date=str(max(df["ex_date"])),
+             last_amount=float(df["amount"].iloc[-1]), source="Yahoo Finance chart events")
 
 
 def treasury(m: Manifest) -> None:
-    df = fred.series(plain_session(), "DGS10")
-    if df.empty:
-        raise ValueError("DGS10 empty")
+    old = read_parquet("treasury_10y.parquet")
+    source = "home.treasury.gov daily par yield curve"
+    try:
+        new = ust.ten_year(plain_session(), ust.years_to_fetch(old is not None and not old.empty, utcnow().date()))
+    except Exception as exc:  # noqa: BLE001 - fall back to FRED's copy of the same series
+        log(f"treasury.gov failed ({exc}); trying FRED")
+        new = fred.series(quick_session(), "DGS10")
+        source = "FRED DGS10 (fallback)"
+    if new.empty:
+        raise ValueError("10-year yield empty")
+    df = upsert(old, new.drop(columns=["series"]).assign(series="UST10Y"), ["date"])
     publish([write_parquet(df, "treasury_10y.parquet")])
     m.record("treasury_10y.parquet", "ok", len(df), last_date=str(max(df["date"])),
-             last_value_pct=float(df["value_pct"].iloc[-1]))
+             last_value_pct=float(df["value_pct"].iloc[-1]), source=source)
 
 
 def main() -> int:
@@ -83,7 +92,7 @@ def main() -> int:
     steps = [
         ("spy_daily.parquet", lambda: spy_prices(m, ns)),
         ("prices_daily.parquet", lambda: universe_snapshot(m, ns, trading_date)),
-        ("spy_dividends.parquet", lambda: spy_dividends(m, ns)),
+        ("spy_dividends.parquet", lambda: spy_dividends(m)),
         ("treasury_10y.parquet", lambda: treasury(m)),
     ]
     for asset, fn in steps:

@@ -89,32 +89,6 @@ def historical(session, api_symbol: str, assetclass: str, start: dt.date, end: d
     return parse_historical(r.json(), label or api_symbol.upper())
 
 
-def parse_dividends(payload: dict, symbol: str) -> pd.DataFrame:
-    rows = _rows(payload) or []
-    df = pd.DataFrame(rows)
-    if df.empty:
-        return pd.DataFrame(columns=["symbol", "ex_date", "amount", "type", "record_date", "pay_date"])
-
-    def d(col):
-        return pd.to_datetime(df.get(col), format="%m/%d/%Y", errors="coerce").dt.date
-
-    return pd.DataFrame({
-        "symbol": symbol,
-        "ex_date": d("exOrEffDate"),
-        "amount": df["amount"].map(num),
-        "type": df.get("type"),
-        "record_date": d("recordDate"),
-        "pay_date": d("paymentDate"),
-    }).dropna(subset=["ex_date", "amount"])
-
-
-def dividends(session, api_symbol: str, assetclass: str, label: str) -> pd.DataFrame:
-    r = session.get(f"{API}/quote/{quote(api_symbol, safe='')}/dividends",
-                    params={"assetclass": assetclass}, timeout=60)
-    r.raise_for_status()
-    return parse_dividends(r.json(), label)
-
-
 def parse_earnings(payload: dict, day: dt.date) -> pd.DataFrame:
     rows = _rows(payload) or []
     df = pd.DataFrame(rows)
