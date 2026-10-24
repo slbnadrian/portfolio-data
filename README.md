@@ -56,9 +56,11 @@ Download any file from `https://github.com/<owner>/<repo>/releases/download/data
   valuation depends on.
 - **`prices_daily.date` is the session whose official closes the snapshot matches** (checked
   against AAPL, MSFT and KO each run; `manifest.json` records `date_source`, and `partial` means the
-  check failed and the date is SPY's latest session, unverified). Before 2026-10-27 snapshots were
-  dated by SPY's latest session although they held the previous session's prices, so the rows
-  dated 2026-10-20 to 2026-10-22 each hold the prior session's prices (10-20 repeats 10-19).
+  check failed and the date is SPY's latest session, unverified). Nasdaq's screener returns the
+  previous session's prices even on the morning after, so the newest snapshot usually ends one
+  session before SPY's latest close. Before 2026-10-24 snapshots were dated by SPY's latest
+  session, so the rows dated 2026-10-20 and 2026-10-21 hold the prior session's prices (10-20
+  repeats 10-19), and the row dated 2026-10-23 holds 10-22's prices until the next run replaces it.
 - **`key`** is the ticker normalised across sources (`BRK/B`, `BRK.B` and `BRK-B` all become `BRK-B`).
 - **Financial concepts** come from several XBRL tags tried in a fixed priority order, chosen per
   period; `tag` records which one was used. `value` is the latest filed figure (restatements win);
