@@ -54,6 +54,11 @@ Download any file from `https://github.com/<owner>/<repo>/releases/download/data
 - **`last_sale` is not the official close.** It is Nasdaq's last trade when the job ran and can
   include after-hours trades. Use `closes_official` or `spy_daily` for any price a decision or a
   valuation depends on.
+- **`prices_daily.date` is the session whose official closes the snapshot matches** (checked
+  against AAPL, MSFT and KO each run; `manifest.json` records `date_source`, and `partial` means the
+  check failed and the date is SPY's latest session, unverified). Before 2026-10-27 snapshots were
+  dated by SPY's latest session although they held the previous session's prices, so the rows
+  dated 2026-10-20 to 2026-10-22 each hold the prior session's prices (10-20 repeats 10-19).
 - **`key`** is the ticker normalised across sources (`BRK/B`, `BRK.B` and `BRK-B` all become `BRK-B`).
 - **Financial concepts** come from several XBRL tags tried in a fixed priority order, chosen per
   period; `tag` records which one was used. `value` is the latest filed figure (restatements win);

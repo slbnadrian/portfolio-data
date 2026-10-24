@@ -32,6 +32,36 @@ def spy_prices(m: Manifest, ns) -> dt.date | None:
     return last
 
 
+SESSION_CHECK_SYMBOLS = ("AAPL", "MSFT", "KO")
+
+
+def snapshot_session(snap, ns, latest: dt.date, tol: float = 1e-4):
+    """Find the trading session whose official closes the screener's last_sale values equal.
+
+    Returns (date, source) when at least two of the check symbols agree on a session, else None.
+    """
+    votes: dict[dt.date, int] = {}
+    for sym in SESSION_CHECK_SYMBOLS:
+        row = snap[snap["symbol"] == sym]
+        if row.empty:
+            continue
+        last = float(row["last_sale"].iloc[0])
+        try:
+            hist = nasdaq.historical(ns, sym.lower(), "stocks", latest - dt.timedelta(days=10), latest, label=sym)
+        except Exception as exc:  # noqa: BLE001 - an unverified date is reported, not fatal
+            log(f"session check: {sym} history failed ({exc})")
+            continue
+        for day, close in sorted(zip(hist["date"], hist["close"]), reverse=True):
+            if day <= latest and close > 0 and abs(last / close - 1) < tol:
+                votes[day] = votes.get(day, 0) + 1
+                break
+    agreed = [d for d, n in votes.items() if n >= 2]
+    if not agreed:
+        return None
+    day = max(agreed)
+    return day, f"session matched to official closes ({votes[day]}/{len(SESSION_CHECK_SYMBOLS)} check symbols)"
+
+
 def universe_snapshot(m: Manifest, ns, trading_date: dt.date | None) -> None:
     snap = nasdaq.screener_snapshot(ns)
     n_all = len(snap)
@@ -41,17 +71,27 @@ def universe_snapshot(m: Manifest, ns, trading_date: dt.date | None) -> None:
         row = snap[snap["symbol"] == sym]
         if row.empty or not (row["last_sale"] > 0).all():
             raise ValueError(f"screener sanity check failed for {sym}")
+    status = "ok"
     date_source = "SPY latest session"
     if trading_date is None:
         trading_date = (utcnow() - dt.timedelta(hours=8)).date()
         date_source = "run date (SPY step failed)"
+    # The screener's last_sale can lag SPY's latest session (seen 2026-10-20 to 10-24: every
+    # snapshot held the previous session's closes). Date the snapshot by the session whose
+    # official closes it matches, not by SPY's latest session.
+    matched = snapshot_session(snap, ns, trading_date)
+    if matched is not None:
+        trading_date, date_source = matched
+    else:
+        status = "partial"
+        date_source += " (unverified: last_sale matched no official close of the check symbols)"
     snap = snap[snap["market_cap"] >= UNIVERSE_FLOOR].copy()
     snap.insert(0, "date", trading_date)
     snap["key"] = snap["symbol"].map(norm_symbol)
     snap["fetched_utc"] = utcnow().isoformat()
     df = upsert(read_parquet("prices_daily.parquet"), snap, ["date", "symbol"])
     publish([write_parquet(df, "prices_daily.parquet")])
-    m.record("prices_daily.parquet", "ok", len(df), last_date=str(trading_date), date_source=date_source,
+    m.record("prices_daily.parquet", status, len(df), last_date=str(trading_date), date_source=date_source,
              symbols_last_date=len(snap), screener_rows=n_all,
              note="last_sale is Nasdaq's last trade at fetch time and can include after-hours; "
                   "use closes_official for decision prices")

@@ -53,8 +53,17 @@ def test_daily_and_weekly(tmp_path, monkeypatch):
     import pipeline.yahoo as yh
 
     monkeypatch.setattr(nq, "screener_snapshot", lambda s: nq.parse_screener(big_screener()))
-    monkeypatch.setattr(nq, "historical",
-                        lambda s, sym, ac, a, b, label=None: nq.parse_historical(HISTORICAL, label or sym.upper()))
+    check_close = {"AAPL": "$255.46", "MSFT": "$255.46", "KO": "$93.90"}   # the screener fixture's last sales
+
+    def fake_historical(s, sym, ac, a, b, label=None):
+        label = label or sym.upper()
+        if label in check_close:
+            row = {"date": "10/17/2026", "close": check_close[label], "volume": "1", "open": "$1", "high": "$1",
+                   "low": "$1"}
+            return nq.parse_historical({"data": {"tradesTable": {"rows": [row]}}}, label)
+        return nq.parse_historical(HISTORICAL, label)
+
+    monkeypatch.setattr(nq, "historical", fake_historical)
     many = {"chart": {"result": [{"events": {"dividends": {
         str(i): {"amount": 1.5 + i / 100, "date": 1600000000 + i * 7_900_000} for i in range(10)}}}]}}
     monkeypatch.setattr(yh, "dividends", lambda s, sym="SPY": yh.parse_dividends(many, sym))
@@ -63,7 +72,7 @@ def test_daily_and_weekly(tmp_path, monkeypatch):
 
     assert bd.main() == 0
     prices = pd.read_parquet(tmp_path / "prices_daily.parquet")
-    assert set(prices["date"]) == {dt.date(2026, 10, 17)}          # dated by SPY's latest session
+    assert set(prices["date"]) == {dt.date(2026, 10, 17)}          # dated by the session its closes match
     assert "TINY" not in set(prices["symbol"])                     # below the $250M floor
 
     # bulk SEC files, built from the fixtures
@@ -89,3 +98,24 @@ def test_daily_and_weekly(tmp_path, monkeypatch):
     assert insider.iloc[0]["code"] == "P"
     assert bw.main() == 0                                          # second run: Form 4 already fetched
     assert len(pd.read_parquet(tmp_path / "insider.parquet")) == 1
+
+
+def test_snapshot_session_dates_by_matching_close(monkeypatch):
+    import pipeline.build_daily as bd
+    import pipeline.nasdaq as nq
+    closes = {"AAPL": [("10/17/2026", "$257.10"), ("10/16/2026", "$255.46")],
+              "MSFT": [("10/17/2026", "$512.00"), ("10/16/2026", "$510.00")],
+              "KO": [("10/17/2026", "$94.20"), ("10/16/2026", "$93.90")]}
+
+    def fake_hist(s, sym, ac, a, b, label=None):
+        rows = [{"date": d, "close": c, "volume": "1", "open": c, "high": c, "low": c} for d, c in closes[label]]
+        return nq.parse_historical({"data": {"tradesTable": {"rows": rows}}}, label)
+
+    monkeypatch.setattr(nq, "historical", fake_hist)
+    snap = pd.DataFrame({"symbol": ["AAPL", "MSFT", "KO"], "last_sale": [255.46, 510.00, 93.90]})
+    day, source = bd.snapshot_session(snap, None, dt.date(2026, 10, 17))
+    assert day == dt.date(2026, 10, 16) and "3/3" in source        # a lagging snapshot gets its own date
+    snap["last_sale"] = [257.10, 512.00, 1.0]
+    assert bd.snapshot_session(snap, None, dt.date(2026, 10, 17))[0] == dt.date(2026, 10, 17)
+    snap["last_sale"] = [1.0, 2.0, 3.0]
+    assert bd.snapshot_session(snap, None, dt.date(2026, 10, 17)) is None
