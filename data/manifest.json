@@ -1,78 +1,78 @@
 {
   "assets": {
     "annual.parquet": {
-      "built_utc": "2026-10-31T15:27:25+00:00",
-      "companies": 2955,
-      "rows": 27967,
+      "built_utc": "2026-11-07T15:50:21+00:00",
+      "companies": 2917,
+      "rows": 27638,
       "status": "ok"
     },
     "closes_official.parquet": {
-      "built_utc": "2026-10-31T15:55:39+00:00",
-      "coverage": 0.999,
-      "last_date": "2026-10-30",
-      "rows": 64880,
+      "built_utc": "2026-11-07T16:19:37+00:00",
+      "coverage": 0.997,
+      "last_date": "2026-11-06",
+      "rows": 78361,
       "status": "ok",
-      "symbols_covered": 2699,
-      "symbols_requested": 2701
+      "symbols_covered": 2661,
+      "symbols_requested": 2668
     },
     "companies.parquet": {
-      "built_utc": "2026-10-31T15:24:13+00:00",
+      "built_utc": "2026-11-07T15:45:05+00:00",
       "coverage": 1.0,
-      "rows": 3557,
+      "rows": 3514,
       "status": "ok"
     },
     "earnings_calendar.parquet": {
-      "built_utc": "2026-10-31T15:30:53+00:00",
+      "built_utc": "2026-11-07T15:55:38+00:00",
       "days_failed": 0,
-      "rows": 3309,
+      "rows": 1776,
       "status": "ok",
-      "through": "2026-12-11"
+      "through": "2026-12-18"
     },
     "facts.parquet": {
-      "built_utc": "2026-10-31T15:27:25+00:00",
-      "companies": 3356,
-      "latest_filed": "2026-10-30",
-      "rows": 1854188,
+      "built_utc": "2026-11-07T15:50:21+00:00",
+      "companies": 3316,
+      "latest_filed": "2026-11-06",
+      "rows": 1876508,
       "status": "ok"
     },
     "filings.parquet": {
-      "built_utc": "2026-10-31T15:24:13+00:00",
-      "latest_filing": "2026-10-30",
-      "rows": 604333,
+      "built_utc": "2026-11-07T15:45:05+00:00",
+      "latest_filing": "2026-11-06",
+      "rows": 600152,
       "status": "ok"
     },
     "insider.parquet": {
       "backlog": 0,
-      "built_utc": "2026-10-31T15:29:50+00:00",
+      "built_utc": "2026-11-07T15:54:39+00:00",
       "failures": 0,
-      "fetched": 1072,
-      "rows": 61461,
+      "fetched": 2042,
+      "rows": 65790,
       "status": "ok"
     },
     "prices_daily.parquet": {
-      "built_utc": "2026-10-31T07:02:48+00:00",
-      "date_source": "session matched to official closes (3/3 check symbols)",
-      "last_date": "2026-10-29",
+      "built_utc": "2026-11-07T07:15:32+00:00",
+      "date_source": "SPY latest session (unverified: last_sale matched no official close of the check symbols)",
+      "last_date": "2026-11-06",
       "note": "last_sale is Nasdaq's last trade at fetch time and can include after-hours; use closes_official for decision prices",
-      "rows": 33908,
-      "screener_rows": 6954,
-      "status": "ok",
-      "symbols_last_date": 3778
+      "rows": 52684,
+      "screener_rows": 7062,
+      "status": "partial",
+      "symbols_last_date": 3743
     },
     "sec_tickers.parquet": {
-      "built_utc": "2026-10-31T15:23:44+00:00",
-      "rows": 10430,
+      "built_utc": "2026-11-07T15:44:37+00:00",
+      "rows": 10409,
       "status": "ok"
     },
     "spy_daily.parquet": {
-      "built_utc": "2026-10-31T07:02:38+00:00",
-      "last_close": 755.72,
-      "last_date": "2026-10-30",
-      "rows": 2522,
+      "built_utc": "2026-11-07T07:15:22+00:00",
+      "last_close": 735.29,
+      "last_date": "2026-11-06",
+      "rows": 2527,
       "status": "ok"
     },
     "spy_dividends.parquet": {
-      "built_utc": "2026-10-31T07:02:50+00:00",
+      "built_utc": "2026-11-07T07:15:35+00:00",
       "last_amount": 1.889,
       "last_ex_date": "2026-09-18",
       "rows": 136,
@@ -80,27 +80,27 @@
       "status": "ok"
     },
     "treasury_10y.parquet": {
-      "built_utc": "2026-10-31T07:02:52+00:00",
-      "last_date": "2026-10-30",
-      "last_value_pct": 4.94,
-      "rows": 2708,
+      "built_utc": "2026-11-07T07:15:38+00:00",
+      "last_date": "2026-11-06",
+      "last_value_pct": 4.86,
+      "rows": 2713,
       "source": "home.treasury.gov daily par yield curve",
       "status": "ok"
     },
     "ttm.parquet": {
-      "built_utc": "2026-10-31T15:27:25+00:00",
-      "rows": 3356,
+      "built_utc": "2026-11-07T15:50:21+00:00",
+      "rows": 3316,
       "status": "ok",
-      "with_net_income": 2930
+      "with_net_income": 2893
     },
     "universe_match": {
-      "built_utc": "2026-10-31T15:23:44+00:00",
-      "rows": 3772,
-      "share_matched": 0.998,
-      "snapshot_date": "2026-10-29",
+      "built_utc": "2026-11-07T15:44:38+00:00",
+      "rows": 3732,
+      "share_matched": 0.997,
+      "snapshot_date": "2026-11-06",
       "status": "ok"
     }
   },
-  "last_daily_run_utc": "2026-10-31T07:02:52+00:00",
-  "last_weekly_run_utc": "2026-10-31T15:55:39+00:00"
+  "last_daily_run_utc": "2026-11-07T07:15:38+00:00",
+  "last_weekly_run_utc": "2026-11-07T16:19:37+00:00"
 }
